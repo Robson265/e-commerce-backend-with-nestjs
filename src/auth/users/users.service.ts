@@ -17,7 +17,7 @@ export class UsersService {
             password: string;
             email: string;
             phoneNumber: string;
-            role: 
+            role: string;
     }){
         const newUser = this.userRepository.create({
             userName: userData.userName,

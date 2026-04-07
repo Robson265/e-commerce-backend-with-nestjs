@@ -18,8 +18,8 @@ export class Order{
     @PrimaryGeneratedColumn('uuid')
     id?: string;
 
-    @Column()
-    userId: string;
+    // @Column()
+    // userId?: string;
 
     @Column()
     totalAmount: string;

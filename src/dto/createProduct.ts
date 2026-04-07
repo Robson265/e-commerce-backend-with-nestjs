@@ -1,20 +1,20 @@
-import { IsNotEmpty, IsString } from "class-validator";
+// import { IsNotEmpty, IsString } from "class-validator";
 
-export class CreateProduct{
+// export class CreateProduct{
     
-    @IsString()
-    @IsNotEmpty()
-    category: string;
+//     @IsString()
+//     @IsNotEmpty()
+//     category: string;
 
-    @IsString()
-    @IsNotEmpty()
-    productName: string;
+//     @IsString()
+//     @IsNotEmpty()
+//     productName: string;
 
-    @IsString()
-    @IsNotEmpty()
-    price: string;
+//     @IsString()
+//     @IsNotEmpty()
+//     price: string;
 
-    @IsString()
-    @IsNotEmpty()
-    quantity: string;
-}
+//     @IsString()
+//     @IsNotEmpty()
+//     quantity: string;
+// }

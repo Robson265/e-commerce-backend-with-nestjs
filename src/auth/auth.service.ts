@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
 import { UsersService } from './users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
@@ -6,16 +6,24 @@ import {ChangePassword} from 'src/dto/changePassword'
 import {ForgetPassword} from 'src/dto/forgetPassword'
 import { RegisterUser } from 'src/dto/register.user';
 import { LoginUser } from 'src/dto/login.user';
-import { access } from 'fs';
 import { Role } from './common/enums/role.enum';
-import { CreateOrder } from 'src/dto/createOrder';
+import { Repository } from 'typeorm';
+import { RefreshToken } from 'src/entities/refresh-token.entity';
+import { InjectRepository } from '@nestjs/typeorm';
+import { RefreshTokenDto } from 'src/dto/refresh-token.dto';
+import { TokenService } from './token.service';
+import { User } from 'src/entities/user.entity';
 
 @Injectable()
 export class AuthService {
 
     constructor(
         private jwtService: JwtService,
-        private userService: UsersService
+        private userService: UsersService,
+        private tokenService: TokenService,
+        @InjectRepository(RefreshToken)
+        private refreshTokenRepo: Repository<RefreshToken>,
+
     ){}
 
 
@@ -27,18 +35,42 @@ export class AuthService {
             throw new BadRequestException("User Already Exist")
         }
 
-        const salt = await bcrypt.gensalt(12)
-        const hash = await bcrypt.hash(registeruser.password, salt)
+        // const salt = await bcrypt.gensalt(12)
+        const hash = await bcrypt.hash(registeruser.password, 12);
 
-        const userName: string = `${registeruser.firstName} ${registeruser.lastName}`;
+        const userName: string = `${registeruser.firstName.trim()} ${registeruser.lastName.trim()}`;
 
-        return await this.userService.create({
+        const user =  await this.userService.create({
             userName,
             password: hash,
             email: registeruser.email,
             phoneNumber: registeruser.phoneNumber,
             role: registeruser.role ?? Role.CUSTOMER,
-        })
+        });
+
+        const access_token = this.tokenService.generateAccessToken(user.id);
+
+        const device_id = crypto.randomUUID();
+
+        const refresh_tokens = this.tokenService.generateRefreshToken(
+            user.id,
+            device_id,
+        );
+
+        const expiry = new Date(Date.now() * 30 * 24 * 60 * 60 * 1000);
+
+        const salt = await bcrypt.gensalt(12);
+        const token_hash = await bcrypt.hash(refresh_tokens, salt); 
+
+        await this.refreshTokenRepo.save({
+        token_hash,
+        device_id,
+        expiry,
+        user,
+    });
+
+    return { refresh_tokens, device_id, access_token };
+
     }   
 
 
@@ -55,13 +87,6 @@ export class AuthService {
         if(!isPasswordValid){
             throw new BadRequestException("Invalid Password")
         }
-
-        const payload = {sub: user.id, username: user.userName, role: user.role};
-    
-
-        return {
-            access_token: await this.jwtService.signAsync(payload)
-                }
 
     }
 
@@ -124,8 +149,6 @@ export class AuthService {
         return {message:" Password changed successfully"};
     }
 
-    //create Order
-    // async createOrder(createorder: CreateOrder){
 
-    // }
+
 }
